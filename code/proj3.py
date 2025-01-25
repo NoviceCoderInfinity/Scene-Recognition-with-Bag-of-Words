@@ -16,6 +16,9 @@ from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 import numpy as np
 
+from sklearn.model_selection import KFold
+from sklearn.manifold import TSNE
+
 # Step 0: Set up parameters, category list, and image paths.
 
 #For this project, you will need to report performance for three
@@ -33,20 +36,19 @@ parser.add_argument('--feature', help='feature', type=str, default='dumy_feature
 parser.add_argument('--classifier', help='classifier', type=str, default='dumy_classifier')
 args = parser.parse_args()
 
-DATA_PATH = '../data/'
+DATA_PATH = '../../UCMerced_LandUse/Images/'
 
 #This is the list of categories / directories to use. The categories are
 #somewhat sorted by similarity so that the confusion matrix looks more
 #structured (indoor and then urban and then rural).
 
-CATEGORIES = ['Kitchen', 'Store', 'Bedroom', 'LivingRoom', 'Office',
-              'Industrial', 'Suburb', 'InsideCity', 'TallBuilding', 'Street',
-              'Highway', 'OpenCountry', 'Coast', 'Mountain', 'Forest']
-
+CATEGORIES = [
+            'agricultural', 'baseballdiamond', 'buildings', 'denseresidential', 'freeway', 'harbor', 'mediumresidential', 'overpass', 'river', 
+            'sparseresidential', 'tenniscourt', 'airplane', 'beach', 'chaparral', 'forest', 'golfcourse', 'intersection', 'mobilehomepark', 'parkinglot',
+            'runway', 'storagetanks'
+        ]
 CATE2ID = {v: k for k, v in enumerate(CATEGORIES)}
-
-ABBR_CATEGORIES = ['Kit', 'Sto', 'Bed', 'Liv', 'Off', 'Ind', 'Sub',
-                   'Cty', 'Bld', 'St', 'HW', 'OC', 'Cst', 'Mnt', 'For']
+ABBR_CATEGORIES = ['Agr', 'Bas', 'Bui', 'Den', 'Fre', 'Har', 'Med', 'Ove', 'Riv', 'Spa', 'Ten', 'Air', 'Bea', 'Cha', 'For', 'Gol', 'Int', 'Mob', 'Par', 'Run', 'Sto']
 
 
 FEATURE = args.feature
@@ -59,8 +61,12 @@ CLASSIFIER = args.classifier
 #simplicity, we assume this is the number of test cases per category, as
 #well.
 
-NUM_TRAIN_PER_CAT = 100
-
+def calculate_accuracy(labels, predictions, categories, split_name):
+    accuracy = float(len([x for x in zip(labels, predictions) if x[0] == x[1]])) / len(labels)
+    print(f"{split_name} Accuracy = {accuracy:.2f}")
+    for category in categories:
+        accuracy_each = float(len([x for x in zip(labels, predictions) if x[0] == x[1] and x[0] == category])) / float(labels.count(category))
+        print(f"{category}: {accuracy_each:.2f}")
 
 def main():
     #This function returns arrays containing the file path for each train
@@ -68,8 +74,8 @@ def main():
     #test image. By default all four of these arrays will be 1500 where each
     #entry is a string.
     print("Getting paths and labels for all train and test data")
-    train_image_paths, test_image_paths, train_labels, test_labels = \
-        get_image_paths(DATA_PATH, CATEGORIES, NUM_TRAIN_PER_CAT)
+    train_image_paths, test_image_paths, val_image_paths, train_labels, test_labels, val_labels = \
+        get_image_paths(DATA_PATH, CATEGORIES)
 
     # TODO Step 1:
     # Represent each image with the appropriate feature
@@ -82,15 +88,19 @@ def main():
         # YOU CODE get_tiny_images.py 
         train_image_feats = get_tiny_images(train_image_paths)
         test_image_feats = get_tiny_images(test_image_paths)
+        val_image_feats = get_tiny_images(val_image_paths)
 
     elif FEATURE == 'bag_of_sift':
         # YOU CODE build_vocabulary.py
+        vocab_size = 400   ### Vocab_size is up to you. Larger values will work better (to a point) but be slower to comput.
         if os.path.isfile('vocab.pkl') is False:
-            print('No existing visual word vocabulary found. Computing one from training images\n')
-            vocab_size = 400   ### Vocab_size is up to you. Larger values will work better (to a point) but be slower to comput.
+            print('No existing visual word vocabulary found. Computing one from training images\n')            
             vocab = build_vocabulary(train_image_paths, vocab_size)
             with open('vocab.pkl', 'wb') as handle:
                 pickle.dump(vocab, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        else:
+            with open('vocab.pkl', 'rb') as handle:
+                vocab = pickle.load(handle)
 
         if os.path.isfile('train_image_feats_1.pkl') is False:
             # YOU CODE get_bags_of_sifts.py
@@ -108,9 +118,19 @@ def main():
         else:
             with open('test_image_feats_1.pkl', 'rb') as handle:
                 test_image_feats = pickle.load(handle)
+
+        if os.path.isfile('val_image_feats_1.pkl') is False:
+            val_image_feats  = get_bags_of_sifts(val_image_paths);
+            with open('val_image_feats_1.pkl', 'wb') as handle:
+                pickle.dump(val_image_feats, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        else:
+            with open('val_image_feats_1.pkl', 'rb') as handle:
+                val_image_feats = pickle.load(handle)
+
     elif FEATURE == 'dumy_feature':
         train_image_feats = []
         test_image_feats = []
+        val_image_feats = []
     else:
         raise NameError('Unknown feature type')
 
@@ -124,67 +144,93 @@ def main():
 
     if CLASSIFIER == 'nearest_neighbor':
         # YOU CODE nearest_neighbor_classify.py
-        predicted_categories = nearest_neighbor_classify(train_image_feats, train_labels, test_image_feats)
+        test_predicted_categories, val_predicted_categories = nearest_neighbor_classify(train_image_feats, train_labels, test_image_feats, val_image_feats)
 
     elif CLASSIFIER == 'support_vector_machine':
         # YOU CODE svm_classify.py
-        predicted_categories = svm_classify(train_image_feats, train_labels, test_image_feats)
+        test_predicted_categories, val_predicted_categories = svm_classify(train_image_feats, train_labels, test_image_feats, val_image_feats)
 
     elif CLASSIFIER == 'dumy_classifier':
         # The dummy classifier simply predicts a random category for
         # every test case
-        predicted_categories = test_labels[:]
-        shuffle(predicted_categories)
+        test_predicted_categories = test_labels[:]
+        val_predicted_categories = val_labels[:]
+        shuffle(test_predicted_categories)
+        shuffle(val_predicted_categories)
     else:
         raise NameError('Unknown classifier type')
 
-    accuracy = float(len([x for x in zip(test_labels,predicted_categories) if x[0]== x[1]]))/float(len(test_labels))
-    print("Accuracy = ", accuracy)
-    
-    for category in CATEGORIES:
-        accuracy_each = float(len([x for x in zip(test_labels,predicted_categories) if x[0]==x[1] and x[0]==category]))/float(test_labels.count(category))
-        print(str(category) + ': ' + str(accuracy_each))
-    
+    # TODO Step 3:
+    # Compute the accuracy of the classification
+    calculate_accuracy(test_labels, test_predicted_categories, CATEGORIES, "Test")
+    calculate_accuracy(val_labels, val_predicted_categories, CATEGORIES, "Validation")
+
+    # Step 4: Build a confusion matrix and score the recognition system
+    # You do not need to code anything in this section.
+    # This code builds a confusion matrix and visualizes it.
+    # It then saves the confusion matrix plot as 'confusion_matrix.png'
     test_labels_ids = [CATE2ID[x] for x in test_labels]
-    predicted_categories_ids = [CATE2ID[x] for x in predicted_categories]
-    train_labels_ids = [CATE2ID[x] for x in train_labels]
-    
-    # Step 3: Build a confusion matrix and score the recognition system
-    # You do not need to code anything in this section. 
-   
-    build_confusion_mtx(test_labels_ids, predicted_categories_ids, ABBR_CATEGORIES)
-    visualize(CATEGORIES, test_image_paths, test_labels_ids, predicted_categories_ids, train_image_paths, train_labels_ids)
+    predicted_categories_ids = [CATE2ID[x] for x in test_predicted_categories]
+    val_labels_ids = [CATE2ID[x] for x in val_labels]
+    val_predicted_categories_ids = [CATE2ID[x] for x in val_predicted_categories]
 
-def build_confusion_mtx(test_labels_ids, predicted_categories, abbr_categories):
-    # Compute confusion matrix
+    build_confusion_mtx(test_labels_ids, predicted_categories_ids, ABBR_CATEGORIES, title='Test Confusion Matrix')
+    build_confusion_mtx(val_labels_ids, val_predicted_categories_ids, ABBR_CATEGORIES, title='Validation Confusion Matrix')
+
+    # Step 5: Visualize the SIFT keypoints
+    # visualize(CATEGORIES, test_image_paths, test_labels_ids, predicted_categories_ids, train_image_paths, val_labels_ids, val_predicted_categories_ids)
+
+    # Plot accuracy vs. codewords
+    plot_accuracy_vs_codewords(train_image_paths, train_labels)
+
+    # Visualize SIFT keypoints with t-SNE
+    visualize_sift_tsne(train_image_feats)
+
+def build_confusion_mtx(test_labels_ids, predicted_categories, abbr_categories, title):
     cm = confusion_matrix(test_labels_ids, predicted_categories)
-    np.set_printoptions(precision=2)
-    '''
-    print('Confusion matrix, without normalization')
-    print(cm)
-    plt.figure()
-    plot_confusion_matrix(cm, CATEGORIES)
-    '''
-    # Normalize the confusion matrix by row (i.e by the number of samples
-    # in each class)
     cm_normalized = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-    #print('Normalized confusion matrix')
-    #print(cm_normalized)
     plt.figure()
-    plot_confusion_matrix(cm_normalized, abbr_categories, title='Normalized confusion matrix')
-
+    plot_confusion_matrix(cm_normalized, abbr_categories, title)
     plt.show()
-     
-def plot_confusion_matrix(cm, category, title='Confusion matrix', cmap=plt.cm.Blues):
+
+def plot_confusion_matrix(cm, categories, title, cmap=plt.cm.Blues):
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
     plt.title(title)
     plt.colorbar()
-    tick_marks = np.arange(len(category))
-    plt.xticks(tick_marks, category, rotation=45)
-    plt.yticks(tick_marks, category)
+    tick_marks = np.arange(len(categories))
+    plt.xticks(tick_marks, categories, rotation=45)
+    plt.yticks(tick_marks, categories)
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
+
+def plot_accuracy_vs_codewords(image_paths, labels):
+    codeword_sizes = [50, 100, 200, 400, 800]
+    accuracies = []
+    for size in codeword_sizes:
+        vocab = build_vocabulary(image_paths, size)
+        features = get_bags_of_sifts(image_paths)
+        kfold = KFold(n_splits=5)
+        fold_accuracies = []
+        for train_idx, test_idx in kfold.split(features):
+            train_feats, test_feats = features[train_idx], features[test_idx]
+            train_labels, test_labels = labels[train_idx], labels[test_idx]
+            predicted_labels = nearest_neighbor_classify(train_feats, train_labels, test_feats)
+            fold_accuracies.append(np.mean(np.array(predicted_labels) == np.array(test_labels)))
+        accuracies.append(np.mean(fold_accuracies))
+
+    plt.plot(codeword_sizes, accuracies, marker='o')
+    plt.title('Accuracy vs. Number of Codewords')
+    plt.xlabel('Number of Codewords')
+    plt.ylabel('Accuracy')
+    plt.show()
+
+def visualize_sift_tsne(features):
+    tsne = TSNE(n_components=2, perplexity=30, random_state=0)
+    reduced_feats = tsne.fit_transform(features)
+    plt.scatter(reduced_feats[:, 0], reduced_feats[:, 1], s=2)
+    plt.title('t-SNE Visualization of SIFT Features')
+    plt.show()
 
 if __name__ == '__main__':
     main()

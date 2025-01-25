@@ -3,7 +3,7 @@ from __future__ import print_function
 import numpy as np
 import scipy.spatial.distance as distance
 
-def nearest_neighbor_classify(train_image_feats, train_labels, test_image_feats):
+def nearest_neighbor_classify(train_image_feats, train_labels, test_image_feats, val_image_feats):
     ###########################################################################
     # TODO:                                                                   #
     # This function will predict the category for every test image by finding #
@@ -30,10 +30,18 @@ def nearest_neighbor_classify(train_image_feats, train_labels, test_image_feats)
         test_image_feats : 
             image_feats is an (M, d) matrix, where d is the 
             dimensionality of the feature representation.
+
+        val_image_feats :
+            image_feats is an (V, d) matrix, where d is the
+            dimensionality of the feature representation.
     Output :
         test_predicts : 
             a list(M) of string, each string indicate the predict
             category for each testing image.
+
+        val_predicts :
+            a list(V) of string, each string indicate the predict
+            category for each validation image.
     '''
     
     CATEGORIES = ['Kitchen', 'Store', 'Bedroom', 'LivingRoom', 'Office',
@@ -43,11 +51,14 @@ def nearest_neighbor_classify(train_image_feats, train_labels, test_image_feats)
     
     N = train_image_feats.shape[0]
     M = test_image_feats.shape[0]
+    V = val_image_feats.shape[0]
     d = train_image_feats.shape[1] # d are same in both train and test
     
     dist = distance.cdist(test_image_feats, train_image_feats, metric='euclidean')
+    dist_val = distance.cdist(val_image_feats, train_image_feats, metric='euclidean')
     #dist = distance.cdist(train_image_feats, test_image_feats, metric='euclidean')
     test_predicts = []
+    val_predicts = []
     
     for each in dist:
         label = []
@@ -62,9 +73,22 @@ def nearest_neighbor_classify(train_image_feats, train_labels, test_image_feats)
                 label_final = item
     
         test_predicts.append(label_final)
+
+    for each in dist_val:
+        label = []
+        idx = np.argsort(each)
+        for i in range(K):
+            label.append(train_labels[idx[i]])
+        
+        amount = 0
+        for item in CATEGORIES:
+            if label.count(item) > amount:
+                label_final = item
+    
+        val_predicts.append(label_final)
         
     #############################################################################
     #                                END OF YOUR CODE                           #
     #############################################################################
     
-    return test_predicts
+    return test_predicts, val_predicts

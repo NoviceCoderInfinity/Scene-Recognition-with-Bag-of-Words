@@ -3,7 +3,7 @@ from sklearn.svm import LinearSVC
 from sklearn import preprocessing
 import pdb
 
-def svm_classify(train_image_feats, train_labels, test_image_feats):
+def svm_classify(train_image_feats, train_labels, test_image_feats, val_image_feats):
     #################################################################################
     # TODO :                                                                        #
     # This function will train a set of linear SVMs for multi-class classification  #
@@ -31,8 +31,10 @@ def svm_classify(train_image_feats, train_labels, test_image_feats):
         train_image_feats : training images features
         train_labels : training images labels
         test_image_feats : testing images features
+        val_image_feats : validation images features
     Output :
-        Predict labels : a list of predict labels of testing images (Dtype = String).
+        Test Image Predict labels : a list of predict labels of testing images (Dtype = String).
+        Validation Image Predict labels : a list of predict labels of validation images (Dtype = String).
     '''
     
     SVC = LinearSVC(C=700.0, class_weight=None, dual=True, fit_intercept=True,
@@ -40,11 +42,11 @@ def svm_classify(train_image_feats, train_labels, test_image_feats):
                     multi_class='ovr', penalty='l2', random_state=0, tol= 1e-4,
                     verbose=0)
     SVC.fit(train_image_feats, train_labels)
-    
-    pred_label = SVC.predict(test_image_feats)
-    
+    test_pred_label = SVC.predict(test_image_feats)
+    val_pred_label = SVC.predict(val_image_feats)
+
     #############################################################################
     #                                END OF YOUR CODE                           #
     #############################################################################
     
-    return pred_label
+    return test_pred_label, val_pred_label
