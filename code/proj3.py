@@ -144,7 +144,8 @@ def main():
 
     if CLASSIFIER == 'nearest_neighbor':
         # YOU CODE nearest_neighbor_classify.py
-        test_predicted_categories, val_predicted_categories = nearest_neighbor_classify(train_image_feats, train_labels, test_image_feats, val_image_feats)
+        test_predicted_categories = nearest_neighbor_classify(train_image_feats, train_labels, test_image_feats)
+        val_predicted_categories = nearest_neighbor_classify(train_image_feats, train_labels, val_image_feats)
 
     elif CLASSIFIER == 'support_vector_machine':
         # YOU CODE svm_classify.py

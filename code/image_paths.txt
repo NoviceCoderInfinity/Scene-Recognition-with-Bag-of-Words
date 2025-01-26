@@ -8,13 +8,3 @@
 ../../UCMerced_LandUse/Images/storagetanks/storagetanks03.tif
 ../../UCMerced_LandUse/Images/storagetanks/storagetanks04.tif
 ../../UCMerced_LandUse/Images/storagetanks/storagetanks05.tif
-../../UCMerced_LandUse/Images/storagetanks/storagetanks06.tif
-../../UCMerced_LandUse/Images/storagetanks/storagetanks07.tif
-../../UCMerced_LandUse/Images/storagetanks/storagetanks08.tif
-../../UCMerced_LandUse/Images/storagetanks/storagetanks09.tif
-../../UCMerced_LandUse/Images/storagetanks/storagetanks10.tif
-../../UCMerced_LandUse/Images/storagetanks/storagetanks11.tif
-../../UCMerced_LandUse/Images/storagetanks/storagetanks12.tif
-../../UCMerced_LandUse/Images/storagetanks/storagetanks13.tif
-../../UCMerced_LandUse/Images/storagetanks/storagetanks14.tif
-../../UCMerced_LandUse/Images/storagetanks/storagetanks15.tif

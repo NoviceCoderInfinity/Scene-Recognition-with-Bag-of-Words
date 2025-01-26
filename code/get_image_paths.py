@@ -13,7 +13,7 @@ def get_image_paths(data_path, categories, split_ratio=[0.7, 0.2, 0.1]):
     for category in categories:
         
         image_paths = glob(os.path.join(data_path, category, '*.tif'))
-        len_ = (int)(len(image_paths) * 0.2)
+        len_ = (int)(len(image_paths) * 0.1)
         image_paths = image_paths[:len_]
         with open('image_paths.txt', 'w') as f:
             for item in image_paths:
