@@ -205,18 +205,28 @@ def plot_confusion_matrix(cm, categories, title, cmap=plt.cm.Blues):
     plt.xlabel('Predicted label')
 
 def plot_accuracy_vs_codewords(image_paths, labels):
+    # Ensure labels is a NumPy array
+    labels = np.array(labels) if not isinstance(labels, np.ndarray) else labels
+    
+    # Validate input dimensions
     codeword_sizes = [50, 100, 200, 400, 800]
     accuracies = []
     for size in codeword_sizes:
         vocab = build_vocabulary(image_paths, size)
         features = get_bags_of_sifts(image_paths)
+        
+        # Ensure features and labels align
+        assert len(features) == len(labels), "Features and labels must have the same number of samples."
+        
         kfold = KFold(n_splits=5)
         fold_accuracies = []
         for train_idx, test_idx in kfold.split(features):
             train_feats, test_feats = features[train_idx], features[test_idx]
             train_labels, test_labels = labels[train_idx], labels[test_idx]
-            predicted_labels = nearest_neighbor_classify(train_feats, train_labels, test_feats)
-            fold_accuracies.append(np.mean(np.array(predicted_labels) == np.array(test_labels)))
+            
+            # Ensure predicted_labels is correctly compared
+            test_predicted_labels = nearest_neighbor_classify(train_feats, train_labels, test_feats)
+            fold_accuracies.append(np.mean(np.array(test_predicted_labels) == np.array(test_labels)))
         accuracies.append(np.mean(fold_accuracies))
 
     plt.plot(codeword_sizes, accuracies, marker='o')

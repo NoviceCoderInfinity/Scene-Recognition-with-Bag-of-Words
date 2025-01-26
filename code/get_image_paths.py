@@ -13,7 +13,12 @@ def get_image_paths(data_path, categories, split_ratio=[0.7, 0.2, 0.1]):
     for category in categories:
         
         image_paths = glob(os.path.join(data_path, category, '*.tif'))
-
+        len_ = (int)(len(image_paths) * 0.2)
+        image_paths = image_paths[:len_]
+        with open('image_paths.txt', 'w') as f:
+            for item in image_paths:
+                f.write("%s\n" % item)
+                
         random.shuffle(image_paths)
         num_train_per_cat = int(len(image_paths) * split_ratio[0])
         for i in range(num_train_per_cat):

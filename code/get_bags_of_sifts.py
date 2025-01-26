@@ -43,7 +43,9 @@ def get_bags_of_sifts(image_paths):
     print("Construct bags of sifts...")
     
     for path in image_paths:
-        img = np.asarray(Image.open(path),dtype='float32')
+        img = np.asarray(Image.open(path).convert('L'),dtype='float32')
+        if img.ndim != 2:
+            raise ValueError(f"Image at {path} is not a 2D array after conversion to grayscale.")
         frames, descriptors = dsift(img, step=[1,1], fast=True)
         dist = distance.cdist(vocab, descriptors, metric='euclidean')
         idx = np.argmin(dist, axis=0)
@@ -55,7 +57,7 @@ def get_bags_of_sifts(image_paths):
     image_feats = np.asarray(image_feats)
     
     end_time = time()
-    print("It takes ", (start_time - end_time), " to construct bags of sifts.")
+    print("It takes ", (end_time - start_time), " to construct bags of sifts.")
     
     #############################################################################
     #                                END OF YOUR CODE                           #
