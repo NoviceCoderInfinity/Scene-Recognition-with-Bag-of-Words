@@ -94,7 +94,7 @@ def build_vocabulary(image_paths, vocab_size):
     start_time = time()
     vocab = kmeans(bag_of_features, vocab_size, initialization="PLUSPLUS")        
     end_time = time()
-    print("It takes ", (start_time - end_time), " to compute vocab.")
+    print("It takes ", (end_time - start_time), " to compute vocab.")
     
     
     ##################################################################################

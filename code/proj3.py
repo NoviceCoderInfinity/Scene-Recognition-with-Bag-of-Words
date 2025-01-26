@@ -88,7 +88,13 @@ def main():
         # YOU CODE get_tiny_images.py 
         train_image_feats = get_tiny_images(train_image_paths)
         test_image_feats = get_tiny_images(test_image_paths)
+        # print(len(test_image_feats))
+        # print(test_image_feats[0])
+        # print(len(test_image_feats[0]))
         val_image_feats = get_tiny_images(val_image_paths)
+        # print(len(val_image_feats))
+        # print(val_image_feats[0])
+        # print(len(val_image_feats[0]))
 
     elif FEATURE == 'bag_of_sift':
         # YOU CODE build_vocabulary.py
@@ -128,9 +134,9 @@ def main():
                 val_image_feats = pickle.load(handle)
 
     elif FEATURE == 'dumy_feature':
-        train_image_feats = []
-        test_image_feats = []
-        val_image_feats = []
+        train_image_feats = [[0] * 768] * len(train_image_paths)
+        test_image_feats = [[0] * 768] * len(test_image_paths)
+        val_image_feats = [[0] * 768] * len(val_image_paths)
     else:
         raise NameError('Unknown feature type')
 
@@ -154,6 +160,7 @@ def main():
     elif CLASSIFIER == 'dumy_classifier':
         # The dummy classifier simply predicts a random category for
         # every test case
+        print(len(train_image_feats))
         test_predicted_categories = test_labels[:]
         val_predicted_categories = val_labels[:]
         shuffle(test_predicted_categories)
